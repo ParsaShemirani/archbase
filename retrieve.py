@@ -47,6 +47,11 @@ def main(
     if bundle_id:
         with Session() as session:
             retrieve_bundle(bundle_id=bundle_id, destination_path=TERMINAL_PATH, session=session)
-
+    if file_id:
+        with Session() as session:
+            f = session.scalar(select(File).where(File.id == file_id))
+            if f is None:
+                raise FileNotFoundError("File id not found in database")
+            shutil.copy2(str(STORAGE_PATH / f.sha256_hash), str(TERMINAL_PATH / f.name))
 if __name__ == "__main__":
     typer.run(main)

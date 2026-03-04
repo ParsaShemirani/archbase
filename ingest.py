@@ -69,12 +69,13 @@ def create_file(file_path: Path) -> File:
         sha256_hash=generate_sha256_hash(file_path),
         size=file_path.stat().st_size,
         created_ts=determine_created_time(file_path).strftime(format=ISO_FMT_Z),
+        created_ts_percision=None,
         description=None
     )
 
     return file
 
-def bundler(path: Path, session: SessionType, parent_id: int | None = None) -> None:
+def bundler(path: Path, percision: int, session: SessionType, parent_id: int | None = None) -> None:
     bundle = Bundle(
         name=path.name,
         parent_id=parent_id,
@@ -89,6 +90,7 @@ def bundler(path: Path, session: SessionType, parent_id: int | None = None) -> N
         else:
             if not child.name.startswith("."):
                 file = create_file(file_path=child)
+                file.created_ts_percision = percision
                 existing_file = get_existing_file(file=file, session=session)
                 if existing_file:
                     file = existing_file
@@ -97,8 +99,8 @@ def bundler(path: Path, session: SessionType, parent_id: int | None = None) -> N
                     session.flush()
 
                     pending_path = PENDING_STORAGE_PATH / file.sha256_hash
-                    child.rename(pending_path)
-                    #shutil.copy2(str(child), str(pending_path))
+                    #child.rename(pending_path)
+                    shutil.copy2(str(child), str(pending_path))
 
                 file_bundle = FileBundle(
                     file_id=file.id,
@@ -119,16 +121,23 @@ def storer(session: SessionType):
 def main(
         file: Annotated[bool, typer.Option("--file", "-f")] = False,
         bundle: Annotated[bool, typer.Option("--bundle", "-b")] = False,
+        percision: Annotated[int, typer.Option("--percision", "-p")] = None,
         store: Annotated[bool, typer.Option("--store", "-s")] = False
 ):
     if bundle:
+        if percision is None:
+            raise ValueError("Precision must be set for created_ts")
+        
         directories = get_sorted_directories(dir_path=TERMINAL_PATH)
         if directories is None:
             raise ValueError("No directories found in terminal")
         with Session() as session:
             with session.begin():
-                bundler(path=directories[0], session=session)
+                bundler(path=directories[0], percision=percision, session=session)
     elif file:
+        if percision is None:
+            raise ValueError("Precision must be set for created_ts")
+        
         files = get_sorted_files(dir_path=TERMINAL_PATH)
         if files is None:
             raise ValueError("No files found in terminal")
@@ -136,6 +145,7 @@ def main(
             with session.begin():
                 for fp in files:
                     f = create_file(file_path=fp)
+                    f.created_ts_percision = percision
                     session.add(f)
                     pending_path = PENDING_STORAGE_PATH / f.sha256_hash
                     fp.rename(pending_path)

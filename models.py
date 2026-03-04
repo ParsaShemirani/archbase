@@ -37,6 +37,7 @@ class File(Base):
     sha256_hash: Mapped[str] = mapped_column(TEXT, nullable=False, unique=True)
     size: Mapped[int] = mapped_column(Integer, nullable=False)
     created_ts: Mapped[str] = mapped_column(TEXT, nullable=False)
+    created_ts_percision: Mapped[int] = mapped_column(Integer, nullable=False)
     description: Mapped[str | None] = mapped_column(TEXT, nullable=True)
 
     inserted_ts: Mapped[str] = mapped_column(
