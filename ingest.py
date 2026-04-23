@@ -86,7 +86,7 @@ def bundler(path: Path, percision: int, session: SessionType, parent_id: int | N
 
     for child in path.iterdir():
         if child.is_dir():
-            bundler(path=child, session=session, parent_id=bundle.id)
+            bundler(path=child, percision=percision, session=session, parent_id=bundle.id)
         else:
             if not child.name.startswith("."):
                 file = create_file(file_path=child)
